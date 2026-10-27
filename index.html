@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Find the Pairs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#25F4EE;--pink:#FE2C55;--ink:#161823;--bg:#F1F1F2;--gold:#FFC93C;--gold-d:#F0A500}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg)}
+body{font-family:'Montserrat',system-ui,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;border:0;cursor:pointer}
+.hidden{display:none!important}
+
+/* background */
+.bg-img{position:fixed;inset:-80px;display:grid;grid-template-columns:repeat(3,1fr);filter:blur(70px) saturate(1.4);opacity:.55;pointer-events:none}
+.bg-img img{width:100%;height:100%;object-fit:cover}
+.bg-veil{position:fixed;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.75));pointer-events:none}
+.fx{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(60px)}
+.blob.b1{width:340px;height:340px;left:-80px;top:-60px;background:rgba(37,244,238,.45);animation:drift1 14s ease-in-out infinite}
+.blob.b2{width:380px;height:380px;right:-120px;top:30%;background:rgba(254,44,85,.35);animation:drift2 16s ease-in-out infinite}
+.blob.b3{width:280px;height:280px;left:10%;bottom:-80px;background:rgba(255,201,60,.35);animation:drift3 18s ease-in-out infinite}
+.float-coin{position:fixed;bottom:-40px;border-radius:50%;background:url('https://i.ibb.co/jZDCP0kW/images-2.jpg') center/cover no-repeat !important;box-shadow:none !important;opacity:0;animation-name:rise;animation-timing-function:linear;animation-iteration-count:infinite}
+.star{position:fixed;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation-name:twinkle;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+
+/* layout */
+.app{position:relative;width:100%;max-width:440px;margin:0 auto;padding:16px 18px 28px;min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;justify-content:space-between}
+.tabs{display:flex;align-items:center;gap:6px;font-weight:800;font-size:15px}
+.tabs .muted{color:rgba(22,24,35,.5)}
+.tabs .sep{width:1px;height:12px;background:rgba(22,24,35,.2)}
+.tabs .active{border-bottom:2px solid var(--ink);padding-bottom:3px}
+.wallet{display:flex;align-items:center;gap:7px;padding:6px 12px 6px 6px;border-radius:999px;background:rgba(255,255,255,.75);backdrop-filter:blur(10px);box-shadow:0 1px 4px rgba(22,24,35,.08);font-weight:800;font-size:15px}
+.coin{display:block;border-radius:50%;background:url('https://i.ibb.co/jZDCP0kW/images-2.jpg') center/cover no-repeat !important;box-shadow:none !important;}
+.coin.sm{width:28px;height:28px}
+.head{text-align:center;margin:34px 0 26px}
+.title{font-size:30px;font-weight:900;letter-spacing:-.5px;text-shadow:-2px 0 var(--cyan),2px 0 var(--pink);animation:glitch 3.5s infinite}
+.sub{font-size:14px;font-weight:600;color:rgba(22,24,35,.55);margin-top:6px}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;perspective:900px}
+.slot{animation:deal .6s cubic-bezier(.2,1.3,.5,1) both;transition:transform .2s}
+.slot:hover{transform:translateY(-5px)}
+.card{aspect-ratio:4/5;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+.card.up{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.back{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(22,24,35,.08);box-shadow:0 4px 14px rgba(22,24,35,.08);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.back::before{content:"";position:absolute;inset:6px;border-radius:8px;border:1.5px dashed rgba(22,24,35,.1)}
+.shine{position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);animation:shine 3.2s ease-in-out infinite}
+.q{position:relative;font-size:40px;font-weight:900;text-shadow:-3px -1px 0 var(--cyan),3px 1px 0 var(--pink);animation:qfloat 2.4s ease-in-out infinite}
+.front{transform:rotateY(180deg);overflow:hidden;background:#0b0f1f;border:2px solid rgba(22,24,35,.1);transition:border-color .3s,box-shadow .4s}
+.front img{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.card.matched .front{border-color:var(--cyan);box-shadow:inset 0 0 22px rgba(37,244,238,.7)}
+
+.dots{display:flex;justify-content:center;gap:6px;margin-top:22px}
+.dots span{width:28px;height:4px;border-radius:2px;background:rgba(22,24,35,.15);transition:background .3s}
+.dots span.on:nth-child(odd){background:var(--cyan)}
+.dots span.on:nth-child(even){background:var(--pink)}
+
+.stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:130px}
+.toast{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;animation:pop .45s ease-out both}
+.toast .ring{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:3px solid var(--cyan);animation:ring .8s ease-out both}
+.toast .ring.r2{border-color:var(--pink);animation-delay:.12s}
+.toast b{font-size:44px;font-weight:900;text-shadow:-3px 0 var(--cyan),3px 0 var(--pink)}
+.toast span{font-size:16px;font-weight:700;color:rgba(22,24,35,.6)}
+.hint{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);font-size:14px;font-weight:700;color:rgba(22,24,35,.7);box-shadow:0 2px 10px rgba(22,24,35,.06)}
+.hint i{width:8px;height:8px;border-radius:50%;background:var(--pink);animation:pulse 1.6s infinite}
+
+.ticker{overflow:hidden;margin:0 -18px;padding:10px 0;background:var(--ink);transform:rotate(-2deg)}
+.ticker-track{display:flex;gap:28px;width:max-content;animation:marquee 14s linear infinite;font-size:13px;font-weight:900;letter-spacing:2px;color:#fff;white-space:nowrap}
+.c1{color:var(--cyan)}.c2{color:var(--pink)}.c3{color:var(--gold)}
+
+/* sheets */
+.overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-end;justify-content:center;background:rgba(22,24,35,.35);backdrop-filter:blur(12px);animation:fadeIn .3s ease-out both}
+.sheet{width:100%;max-width:440px;border-radius:20px 20px 0 0;padding:14px 24px 30px;background:#fff;box-shadow:0 -10px 40px rgba(22,24,35,.15);display:flex;flex-direction:column;gap:14px;animation:slideUp .5s cubic-bezier(.2,.9,.3,1) both}
+.sheet.center{align-items:center;text-align:center;gap:12px}
+.grab{align-self:center;width:40px;height:4px;border-radius:2px;background:rgba(22,24,35,.15)}
+.eyebrow{font-size:13px;font-weight:700;color:rgba(22,24,35,.5);text-transform:uppercase;letter-spacing:1px;margin-top:8px}
+.big-coin{width:120px;height:120px;margin:8px 0;border-radius:50%;background:url('https://i.ibb.co/jZDCP0kW/images-2.jpg') center/cover no-repeat !important;box-shadow:0 0 50px rgba(255,201,60,.35) !important;animation:bob 1.6s ease-in-out infinite}
+.amount{font-size:54px;font-weight:900;line-height:1;text-shadow:-3px 0 var(--cyan),3px 0 var(--pink)}
+.sheet h2{margin:8px 0 0;font-size:22px;font-weight:900;text-align:center}
+.sheet p{margin:-6px 0 0;font-size:14px;font-weight:600;color:rgba(22,24,35,.5);text-align:center}
+.field{display:flex;align-items:center;gap:6px;border-radius:6px;padding:0 14px;background:var(--bg);border:1px solid transparent}
+.field.err{border-color:var(--pink)}
+.field span{font-weight:800;font-size:17px;color:rgba(22,24,35,.45)}
+.field input{flex:1;min-width:0;border:0;outline:none;padding:15px 0;background:transparent;color:var(--ink);font:700 17px 'Montserrat',sans-serif}
+.field input::placeholder{color:rgba(22,24,35,.35)}
+.err-msg{margin-top:-6px;font-size:13px;font-weight:700;color:var(--pink)}
+.btn{width:100%;border-radius:6px;padding:15px;background:var(--pink);color:#fff;font-size:17px;font-weight:800;transition:background .2s,opacity .2s}
+.btn:active{opacity:.8}
+.btn.pulse{margin-top:10px;animation:pulse 1.8s infinite}
+.btn.dim{background:rgba(254,44,85,.4)}
+
+/* loading + done */
+.screen{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:20px;background:rgba(241,241,242,.7);backdrop-filter:blur(30px)}
+.spinner{position:relative;width:56px;height:56px}
+.spinner i{position:absolute;top:10px;width:36px;height:36px;border-radius:50%;mix-blend-mode:multiply;animation:spin 1s linear infinite}
+.spinner i:first-child{left:0;background:var(--cyan);transform-origin:28px 18px}
+.spinner i:last-child{left:20px;background:var(--pink);transform-origin:8px 18px}
+.load-label{font-size:18px;font-weight:800}
+.bar{width:220px;height:3px;border-radius:2px;background:rgba(22,24,35,.1);overflow:hidden}
+.bar div{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+#confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.done{position:relative;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;animation:pop .6s ease-out both}
+.done h1{margin:0;font-size:42px;font-weight:900;letter-spacing:-.5px;text-shadow:-3px 0 var(--cyan),3px 0 var(--pink)}
+.done .user{font-size:18px;font-weight:700}
+.done .total{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 22px;border-radius:999px;background:#fff;box-shadow:0 2px 10px rgba(22,24,35,.08);font-size:28px;font-weight:900}
+.done .total .coin{width:42px;height:42px;box-shadow:none !important}
+.done .note{font-size:14px;font-weight:600;color:rgba(22,24,35,.55)}
+.done .btn{width:auto;margin-top:18px;padding:14px 28px;font-size:16px}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(80px,120px) scale(1.25)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1.1)}50%{transform:translate(-100px,-80px) scale(.9)}}
+@keyframes drift3{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-120px)}}
+@keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%,90%{opacity:.9}100%{transform:translateY(-115vh) rotate(360deg);opacity:0}}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.3) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
+@keyframes deal{0%{opacity:0;transform:translateY(40px) scale(.7) rotate(-8deg)}100%{opacity:1;transform:none}}
+@keyframes shine{0%{transform:translateX(-150%) skewX(-20deg)}60%,100%{transform:translateX(250%) skewX(-20deg)}}
+@keyframes glitch{0%,92%,100%{text-shadow:-2px 0 var(--cyan),2px 0 var(--pink);transform:none}94%{text-shadow:-5px 1px var(--cyan),5px -1px var(--pink);transform:translateX(2px)}96%{text-shadow:4px 0 var(--cyan),-4px 0 var(--pink);transform:translateX(-2px)}}
+@keyframes qfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes ring{0%{transform:scale(.3);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes slideUp{0%{transform:translateY(100%)}70%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-10px) rotate(6deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(254,44,85,.55)}50%{box-shadow:0 0 0 10px rgba(254,44,85,0)}}
+</style>
+</head>
+<body>
+<div class="bg-img">
+  <img src="https://i.ibb.co/hxJHHnXT/photo-2026-10-27-15-26-18.jpg" alt="Zeus">
+  <img src="https://i.ibb.co/My6wnq15/photo-2026-10-27-15-26-10.jpg" alt="Gorilla">
+  <img src="https://i.ibb.co/cSymwLJM/photo-2026-10-27-15-26-22.jpg" alt="Dragon">
+</div>
+<div class="bg-veil"></div>
+<div class="fx" id="fx">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+</div>
+
+<main class="app">
+  <div class="top">
+    <div class="tabs"><span class="muted">Following</span><span class="sep"></span><span class="active">Game</span></div>
+    <div class="wallet"><span class="coin sm"></span><span id="coins">0</span></div>
+  </div>
+
+  <div class="head">
+    <div class="title" id="title">Find the pairs</div>
+    <div class="sub" id="subtitle">0 / 3 · 0:00</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="dots" id="dots"><span></span><span></span><span></span></div>
+
+  <div class="stage">
+    <div class="toast hidden" id="toast"><i class="ring"></i><i class="ring r2"></i><b>MATCH!</b><span id="toastName"></span></div>
+    <div class="hint" id="hint"><i></i>Win up to 8,000 coins — match all 3 pairs</div>
+  </div>
+
+  <div class="ticker"><div class="ticker-track" id="ticker"></div></div>
+</main>
+
+<div class="overlay hidden" id="rewardSheet">
+  <div class="sheet center">
+    <span class="grab"></span>
+    <div class="eyebrow">All pairs found · <span id="timeLabel">0:00</span></div>
+    <div class="big-coin"></div>
+    <div class="amount">+<span data-reward></span></div>
+    <div style="font-size:17px;font-weight:700">You earned a reward — <span data-reward></span> coins</div>
+    <button class="btn pulse" id="claimBtn">Claim reward</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="nickSheet">
+  <form class="sheet" id="nickForm" novalidate>
+    <span class="grab"></span>
+    <h2>Enter your username</h2>
+    <p>We’ll add <span data-reward></span> coins to your account</p>
+    <label class="field" id="field"><span>@</span><input id="nick" placeholder="nickname" maxlength="24" autocomplete="off"></label>
+    <div class="err-msg hidden" id="nickErr">At least 3 characters</div>
+    <button class="btn dim" id="nickBtn" type="submit">Continue</button>
+  </form>
+</div>
+
+<div class="screen hidden" id="loading">
+  <div class="spinner"><i></i><i></i></div>
+  <div class="load-label">Adding coins for @<span data-nick></span></div>
+  <div class="bar"><div id="bar"></div></div>
+</div>
+
+<div class="screen hidden" id="done">
+  <canvas id="confetti"></canvas>
+  <div class="done">
+    <h1>Congratulations!</h1>
+    <div class="user">@<span data-nick></span></div>
+    <div class="total"><span class="coin"></span><span data-reward></span></div>
+    <div class="note">coins added to your account</div>
+    <button class="btn" id="againBtn">Play again</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const CARDS = {
+    zeus:    { name: 'Zeus',         img: 'https://i.ibb.co/hxJHHnXT/photo-2026-10-27-15-26-18.jpg' },
+    gorilla: { name: 'Gorilla',      img: 'https://i.ibb.co/My6wnq15/photo-2026-10-27-15-26-10.jpg' },
+    dragon:  { name: 'Dragon Flame', img: 'https://i.ibb.co/cSymwLJM/photo-2026-10-27-15-26-22.jpg' },
+  };
+  // Fixed layout (3×2): top row, then bottom row
+  const LAYOUT = ['gorilla', 'dragon', 'zeus', 'dragon', 'zeus', 'gorilla'];
+  const PAIRS = 3;
+  const LOAD_MS = 1000;
+  const REWARD_MIN = 3500, REWARD_MAX = 8000;
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => n.toLocaleString('en-US');
+  const show = (el, on) => el.classList.toggle('hidden', !on);
+
+  let s, tickT, toastT, raf;
+
+  // Ambient background: floating coins + stars
+  (function buildFx() {
+    const fx = $('fx'), cols = ['#25F4EE', '#FE2C55', '#FFC93C'];
+    for (let i = 0; i < 14; i++) {
+      const d = document.createElement('div'), sz = 10 + Math.random() * 16;
+      d.className = 'float-coin';
+      Object.assign(d.style, { left: Math.random() * 100 + '%', width: sz + 'px', height: sz + 'px',
+        boxShadow: `inset 0 0 0 ${Math.max(2, sz / 7)}px #F0A500`,
+        animationDuration: 10 + Math.random() * 10 + 's', animationDelay: -Math.random() * 20 + 's' });
+      fx.appendChild(d);
+    }
+    for (let i = 0; i < 18; i++) {
+      const d = document.createElement('div'), sz = 6 + Math.random() * 8;
+      d.className = 'star';
+      Object.assign(d.style, { left: Math.random() * 100 + '%', top: Math.random() * 100 + '%', width: sz + 'px', height: sz + 'px',
+        background: cols[i % 3], animationDuration: 2 + Math.random() * 3 + 's', animationDelay: -Math.random() * 4 + 's' });
+      fx.appendChild(d);
+    }
+    const item = '<span>FIND THE PAIR</span><span class="c1">✦</span><span>GET COINS</span><span class="c2">✦</span><span>FIND THE PAIR</span><span class="c3">✦</span><span>GET COINS</span><span class="c1">✦</span>';
+    $('ticker').innerHTML = item.repeat(4);
+  })();
+
+  function newGame() {
+    s = { open: [], matched: [], lock: false, start: 0, end: 0, coins: 0,
+          reward: Math.round((REWARD_MIN + Math.random() * (REWARD_MAX - REWARD_MIN)) / 10) * 10, nick: '' };
+    document.querySelectorAll('[data-reward]').forEach(el => el.textContent = fmt(s.reward));
+    $('coins').textContent = '0';
+    $('nick').value = '';
+    setNickError(false);
+    $('nickBtn').classList.add('dim');
+    ['rewardSheet', 'nickSheet', 'loading', 'done'].forEach(id => show($(id), false));
+    show($('toast'), false); show($('hint'), true);
+    stopConfetti();
+
+    const grid = $('grid');
+    grid.innerHTML = '';
+    LAYOUT.forEach((key, i) => {
+      const c = CARDS[key];
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.style.animationDelay = i * 0.08 + 's';
+      slot.innerHTML = `<div class="card" data-i="${i}">
+          <div class="face back"><span class="shine" style="animation-delay:${i * 0.08}s"></span><span class="q" style="animation-delay:${i * 0.08}s">?</span></div>
+          <div class="face front"><img src="${c.img}" alt="${c.name}"></div>
+        </div>`;
+      grid.appendChild(slot);
+    });
+    render();
+  }
+
+  function timeLabel() {
+    const secs = s.start ? Math.floor(((s.end || Date.now()) - s.start) / 1000) : 0;
+    return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  }
+
+  function render() {
+    const all = s.matched.length === PAIRS;
+    $('title').textContent = all ? 'Done!' : 'Find the pairs';
+    $('subtitle').textContent = all ? `3 / 3 · in ${timeLabel()}`
+      : s.open.length === 1 ? 'Where’s the other one?' : `${s.matched.length} / 3 · ${timeLabel()}`;
+    document.querySelectorAll('.card').forEach(el => {
+      const i = +el.dataset.i, m = s.matched.includes(LAYOUT[i]);
+      el.classList.toggle('up', m || s.open.includes(i));
+      el.classList.toggle('matched', m);
+    });
+    [...$('dots').children].forEach((d, i) => d.classList.toggle('on', i < s.matched.length));
+  }
+
+  function flip(i) {
+    if (s.lock || s.open.includes(i) || s.matched.includes(LAYOUT[i]) || s.matched.length === PAIRS) return;
+    if (!s.start) s.start = Date.now();
+    s.open.push(i);
+    if (s.open.length === 2) {
+      const [a, b] = s.open;
+      if (LAYOUT[a] === LAYOUT[b]) {
+        s.matched.push(LAYOUT[a]);
+        s.open = [];
+        showToast(CARDS[LAYOUT[a]].name);
+        if (s.matched.length === PAIRS) {
+          s.end = Date.now();
+          $('timeLabel').textContent = timeLabel();
+          setTimeout(() => { show($('toast'), false); show($('rewardSheet'), true); }, 1000);
+        }
+      } else {
+        s.lock = true;
+        setTimeout(() => { s.lock = false; s.open = []; render(); }, 850);
+      }
+    }
+    render();
+  }
+
+  function showToast(name) {
+    clearTimeout(toastT);
+    const t = $('toast');
+    $('toastName').textContent = name;
+    show($('hint'), false);
+    show(t, false); void t.offsetWidth; show(t, true); // restart animation
+    toastT = setTimeout(() => { show(t, false); if (s.matched.length < PAIRS) show($('hint'), true); }, 1100);
+  }
+
+  function setNickError(on) {
+    show($('nickErr'), on);
+    $('field').classList.toggle('err', on);
+  }
+
+  function submitNick(e) {
+    e.preventDefault();
+    const nick = $('nick').value.trim().replace(/^@/, '');
+    if (nick.length < 3) return setNickError(true);
+    s.nick = nick;
+    document.querySelectorAll('[data-nick]').forEach(el => el.textContent = nick);
+    $('nick').blur();
+    show($('nickSheet'), false);
+    show($('loading'), true);
+    const t0 = performance.now();
+    (function step(now) {
+      const p = Math.min(1, (now - t0) / LOAD_MS);
+      $('bar').style.width = p * 100 + '%';
+      if (p < 1) return requestAnimationFrame(step);
+      s.coins = s.reward;
+      $('coins').textContent = fmt(s.coins);
+      show($('loading'), false);
+      show($('done'), true);
+      startConfetti();
+    })(t0);
+  }
+
+  // Infinite confetti
+  function startConfetti() {
+    const el = $('confetti'), ctx = el.getContext('2d');
+    const cols = ['#25F4EE', '#FE2C55', '#161823', '#FFC93C'];
+    let W, H;
+    const size = () => {
+      const d = window.devicePixelRatio || 1;
+      W = el.clientWidth; H = el.clientHeight;
+      el.width = W * d; el.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+    };
+    size();
+    const mk = y => ({ x: Math.random() * W, y: y ?? -20, w: 6 + Math.random() * 6, h: 8 + Math.random() * 10,
+      vy: 1.5 + Math.random() * 3, vx: -1 + Math.random() * 2, r: Math.random() * 6, vr: -.15 + Math.random() * .3,
+      c: cols[Math.random() * cols.length | 0], sw: Math.random() * 6 });
+    const parts = Array.from({ length: 160 }, () => mk(Math.random() * H - H));
+    (function loop() {
+      if (el.clientWidth !== W || el.clientHeight !== H) size();
+      ctx.clearRect(0, 0, W, H);
+      for (const p of parts) {
+        p.y += p.vy; p.x += p.vx + Math.sin(p.sw += .05) * .6; p.r += p.vr;
+        if (p.y > H + 20) Object.assign(p, mk());
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.scale(1, Math.cos(p.sw * 2));
+        ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+      }
+      raf = requestAnimationFrame(loop);
+    })();
+  }
+  function stopConfetti() { cancelAnimationFrame(raf); }
+
+  // Events
+  $('grid').addEventListener('click', e => {
+    const card = e.target.closest('.card');
+    if (card) flip(+card.dataset.i);
+  });
+  $('claimBtn').addEventListener('click', () => {
+    show($('rewardSheet'), false);
+    show($('nickSheet'), true);
+    setTimeout(() => $('nick').focus(), 350);
+  });
+  $('nick').addEventListener('input', e => {
+    setNickError(false);
+    $('nickBtn').classList.toggle('dim', e.target.value.trim().length < 3);
+  });
+  $('nickForm').addEventListener('submit', submitNick);
+  $('againBtn').addEventListener('click', newGame);
+
+  tickT = setInterval(() => { if (s.start && !s.end) render(); }, 1000);
+  newGame();
+})();
+</script>
+</body>
+</html>
